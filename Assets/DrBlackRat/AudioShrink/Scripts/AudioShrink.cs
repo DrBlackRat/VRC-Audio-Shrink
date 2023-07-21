@@ -57,7 +57,7 @@ namespace DrBlackRat
         private void Start()
         {
             // Initial Setup
-            SetEnabled(audioShrinkToggle.isOn, false);
+            SetEnabled(audioShrinkToggle.isOn, true);
             SetAudioBand(audioBand);
             SetDefaultScale(defaultScale, false);
             SetMaxAmplitudeScale(maxAmplitudeScale, false);
