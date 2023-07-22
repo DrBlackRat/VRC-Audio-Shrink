@@ -81,6 +81,8 @@ namespace DrBlackRat
         private int audioBandInt;
         private int audioDataindex;
 
+        private int safeZoneCount;
+
 
         private void Start()
         {
@@ -132,10 +134,10 @@ namespace DrBlackRat
             {
                 ScalePlayer();
             }
-            else if (inSafeZone)
+            else if (isEnabled && inSafeZone)
             {
 #if !UNITY_EDITOR
-                Networking.LocalPlayer.SetAvatarEyeHeightByMultiplier(defaultScale);
+                Networking.LocalPlayer.SetAvatarEyeHeightByMultiplier(1);
 #endif
             }
         }
@@ -147,7 +149,7 @@ namespace DrBlackRat
             SetDefaultScale(defaultScale, false);
             SetMaxAmplitudeScale(maxAmplitudeScale, false);
         }
-
+        #region UI Events
         // Enable / Disable button
         public void _AudioShrinkToggle()
         {
@@ -213,35 +215,45 @@ namespace DrBlackRat
             if (!Networking.IsOwner(gameObject)) Networking.SetOwner(Networking.LocalPlayer, gameObject);
             RequestSerialization();
         }
-
+        #endregion
+        #region Safe Zone Events
         // Safe Zone Trigger / Respawn etc
-        public override void OnPlayerTriggerEnter(VRCPlayerApi player)
+        public void _AudioShrinkOnPlayerSafeZoneEnter()
         {
-            if (!player.isLocal) return;
-            // Set Text
-            popupText.text = safeZoneMessage;
-            // Setting up Animation
-            inSafeZone = true;
-            popupMessageElapsedTime = 0f;
-            popupMessageMovementCompleted = false;
+            safeZoneCount += 1;
+            UpdateSafeZone();
         }
-        public override void OnPlayerTriggerExit(VRCPlayerApi player)
+        public void _AudioShrinkOnPlayerSafeZoneExit()
         {
-            if (!player.isLocal) return;
-            // Setting up Animation
-            inSafeZone = false;
-            popupMessageElapsedTime = 0f;
-            popupMessageMovementCompleted = false;
+            safeZoneCount -= 1;
+            UpdateSafeZone();
         }
-        public override void OnPlayerRespawn(VRCPlayerApi player)
+        // Enabling / Disabling SafeZoneMode
+        private void UpdateSafeZone()
         {
-            if (!player.isLocal) return;
-            // Setting up Animation
-            inSafeZone = false;
-            popupMessageElapsedTime = 0f;
-            popupMessageMovementCompleted = false;
+            if (safeZoneCount > 0)
+            {
+                inSafeZone = true;
+            }
+            else
+            {
+                inSafeZone = false;
+            }
+            // Set text & trigger animation
+            if (inSafeZone)
+            {
+                popupText.text = safeZoneMessage;
+                popupMessageElapsedTime = 0f;
+                popupMessageMovementCompleted = false;
+            }
+            else
+            {
+                popupMessageElapsedTime = 0f;
+                popupMessageMovementCompleted = false;
+            }
         }
-
+        #endregion
+        #region Setting Variables & According Settings
         // Enabling / Disabling AudioShrink
         private void SetEnabled(bool enabled, bool skipToggleAdjustment)
         {
@@ -263,7 +275,7 @@ namespace DrBlackRat
             // Turning the toggle on / off
             if (!skipToggleAdjustment)
             {
-                audioShrinkToggle.enabled = isEnabled;
+                audioShrinkToggle.SetIsOnWithoutNotify(isEnabled);
             }
         }
 
@@ -315,6 +327,9 @@ namespace DrBlackRat
                 maxAmplitudeScaleSlider.value = maxAmplitudeScale;
             }
         }
+        #endregion
+
+        #region UI Animations
         // Audio Band Selector Animation
         private void MoveALBandSelector(Vector3 startPos, Vector3 endPos)
         {
@@ -345,7 +360,8 @@ namespace DrBlackRat
                 }
             }
         }
-        // Scale based on AudioLink
+        #endregion
+        #region Scaling Player
         private void ScalePlayer()
         {
             Color[] audioData = audioLink.audioData;
@@ -355,6 +371,7 @@ namespace DrBlackRat
             Networking.LocalPlayer.SetAvatarEyeHeightByMultiplier(Mathf.Lerp(defaultScale, maxAmplitudeScale, amplitude));
 #endif
         }
+        #endregion
     }
     public enum ALBand
     {

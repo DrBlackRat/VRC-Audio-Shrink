@@ -287,22 +287,22 @@ PrefabInstance:
         type: 3}
       propertyPath: DynamicMaterials.Array.data[0]
       value: 
-      objectReference: {fileID: 2147374, guid: 0161d805a3764c089bef00bfe00793f5, type: 2}
+      objectReference: {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 836321042223372360, guid: b85f94c28f1aa514391ed40a37f2ef52,
         type: 3}
       propertyPath: DynamicMaterials.Array.data[1]
       value: 
-      objectReference: {fileID: 2100000, guid: 3846732e3033c5f42a964ff0623274f9, type: 2}
+      objectReference: {fileID: 2100000, guid: 1a72c7fef45e1664abd38e7079ec252d, type: 2}
     - target: {fileID: 836321042223372360, guid: b85f94c28f1aa514391ed40a37f2ef52,
         type: 3}
       propertyPath: DynamicMaterials.Array.data[2]
       value: 
-      objectReference: {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+      objectReference: {fileID: 2100000, guid: 3846732e3033c5f42a964ff0623274f9, type: 2}
     - target: {fileID: 836321042223372360, guid: b85f94c28f1aa514391ed40a37f2ef52,
         type: 3}
       propertyPath: DynamicMaterials.Array.data[3]
       value: 
-      objectReference: {fileID: 2100000, guid: 1a72c7fef45e1664abd38e7079ec252d, type: 2}
+      objectReference: {fileID: 2147374, guid: 0161d805a3764c089bef00bfe00793f5, type: 2}
     - target: {fileID: 836321042223372360, guid: b85f94c28f1aa514391ed40a37f2ef52,
         type: 3}
       propertyPath: DynamicMaterials.Array.data[4]
@@ -1316,7 +1316,7 @@ GameObject:
   - component: {fileID: 237759990}
   - component: {fileID: 237759989}
   m_Layer: 0
-  m_Name: Cube (1)
+  m_Name: Safe Zone Floor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1330,12 +1330,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 237759987}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 4.256, y: -0.046000004, z: 4.5}
-  m_LocalScale: {x: 1, y: 0.1, z: 1}
+  m_LocalPosition: {x: 3.62, y: -0.049600005, z: 4}
+  m_LocalScale: {x: 2, y: 0.1, z: 2}
   m_Children:
   - {fileID: 2013531702}
-  m_Father: {fileID: 1814027670}
-  m_RootOrder: 3
+  m_Father: {fileID: 0}
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &237759989
 MeshRenderer:
@@ -2260,7 +2260,7 @@ PrefabInstance:
     - target: {fileID: 8132759026596613741, guid: 385ac04e8d2b6f84ea93cb8392fad970,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3.613
+      value: 2.9769998
       objectReference: {fileID: 0}
     - target: {fileID: 8132759026596613741, guid: 385ac04e8d2b6f84ea93cb8392fad970,
         type: 3}
@@ -4108,7 +4108,7 @@ PrefabInstance:
     - target: {fileID: 6421412928178292073, guid: 87d772cf1b1ec7b49839dde29eb427be,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -1.04
       objectReference: {fileID: 0}
     - target: {fileID: 6421412928178292073, guid: 87d772cf1b1ec7b49839dde29eb427be,
         type: 3}
@@ -6310,12 +6310,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1680905916}
   m_CullTransparentMesh: 0
---- !u!4 &1814027670 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 836321042803466095, guid: b85f94c28f1aa514391ed40a37f2ef52,
-    type: 3}
-  m_PrefabInstance: {fileID: 4769047}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1850045259
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6746,7 +6740,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 90, y: 45, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0.66}
+  m_AnchoredPosition: {x: 0, y: 0.51}
   m_SizeDelta: {x: 1.25, y: 0.5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2013531703
@@ -7064,7 +7058,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3230750367499888740}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 4.256, y: 1.2, z: 4.945}
+  m_LocalPosition: {x: 3.62, y: 1.2, z: 4.945}
   m_LocalScale: {x: 0.008000001, y: 0.008, z: 0.008000001}
   m_Children:
   - {fileID: 3230750368324493691}
@@ -7212,8 +7206,8 @@ BoxCollider:
   m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 187.5, y: 300, z: 187.5}
-  m_Center: {x: 0, y: 0, z: -93.75}
+  m_Size: {x: 250, y: 300, z: 250}
+  m_Center: {x: 0, y: 0, z: -118.125}
 --- !u!54 &3230750367499888745
 Rigidbody:
   m_ObjectHideFlags: 0
