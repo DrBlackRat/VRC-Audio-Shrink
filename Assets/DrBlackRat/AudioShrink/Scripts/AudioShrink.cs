@@ -228,7 +228,7 @@ namespace DrBlackRat
             RequestSerialization();
         }
         #endregion
-        #region Safe Zone Events
+        #region Safe Zone
         // Safe Zone Trigger / Respawn etc
         public void _AudioShrinkOnPlayerSafeZoneEnter()
         {
@@ -307,10 +307,10 @@ namespace DrBlackRat
                     audioBandInt = 1;
                     break;
                 case ALBand.highMid:
-                    audioBandInt = 3;
+                    audioBandInt = 2;
                     break;
                 case ALBand.treble:
-                    audioBandInt = 4;
+                    audioBandInt = 3;
                     break;
             }
             // calculating new auidoDataindex
