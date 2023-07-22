@@ -14,17 +14,20 @@ namespace DrBlackRat
     public class AudioShrink : UdonSharpBehaviour
     {
         [Header("Audio Shrink Settings")]
-        [SerializeField][Tooltip("AudioLink Prefab in your scene")]
-        private AudioLink audioLink;
-        [SerializeField][Tooltip("AudioLink Band used for AudioShrink")]
+        [Tooltip("AudioLink Prefab in your scene")]
+        public AudioLink audioLink;
+        [Space(10)]
+        [SerializeField][Tooltip("Sync Audio Band, Default Scale and Max Amplitude Scale over the network")]
+        private bool syncSettings = true;
+        [SerializeField][UdonSynced][Tooltip("AudioLink Band used for AudioShrink")]
         private ALBand audioBand = ALBand.bass;
         [SerializeField][Range(0, 127)][Tooltip("Adds an extra delay to AudioShrink")]
         private int delay = 0;
 
         [Header("Scale Settings")]
-        [SerializeField][Tooltip("Scale multiplier that is applied when nothing is happening on the set audio band")]
+        [SerializeField][UdonSynced][Tooltip("Scale multiplier that is applied when nothing is happening on the set audio band")]
         private float defaultScale = 1.0f;
-        [SerializeField][Tooltip("Scale multiplier that is applied when the set audio band is maxed out ")]
+        [SerializeField][UdonSynced][Tooltip("Scale multiplier that is applied when the set audio band is maxed out ")]
         private float maxAmplitudeScale = 2.0f;
 
         [Header("Internals")]
@@ -41,23 +44,50 @@ namespace DrBlackRat
         [SerializeField]
         private RectTransform audioBandSelector;
 
-        private bool isEnabled = false;
-
         private bool aLBandMovementCompleted = true;
         private float aLBandMovementElapsedTime;
         [SerializeField]
         private float aLBandMovementDuration = 0.3f;
+        [SerializeField]
+        private AnimationCurve aLBandMovementCurve;
         private Vector3 aLBandMovementOldPos;
         private Vector3 alBandSelectorBassPos = new Vector3(-18f, 0f, 0f);
         private Vector3 alBandSelectorLowMidPos = new Vector3(-6f, 0f, 0f);
         private Vector3 alBandSelectorHighMidPos = new Vector3(6f, 0f, 0f);
         private Vector3 alBandSelectorTreblePos = new Vector3(18f, 0f, 0f);
 
+        [SerializeField]
+        private GameObject popupMessage;
+        [SerializeField]
+        private TextMeshProUGUI popupText;
+        private RectTransform popupMessageTransform;
+        private bool popupMessageMovementCompleted = true;
+        private float popupMessageElapsedTime;
+        [SerializeField]
+        private float popupMessageDuration = 0.3f;
+        [SerializeField]
+        private AnimationCurve popupMessageCurve;
+        private Vector3 popupMessageOffPos = new Vector3(0f, -4.5f, 0f);
+        private Vector3 popupMessageOnPos = new Vector3(0f, 4f, 0f);
+#if UNITY_ANDROID
+        private string safeZoneMessage = "You are currently inside the Safe Zone! \nGet further away for AudioShrink to take effect.";
+#else
+        private string safeZoneMessage = "You are currently inside the Safe Zone! \r\nGet further away for AudioShrink to take effect.";
+#endif
+
+        private bool isEnabled = false;
+        private bool inSafeZone = false;
+
+        private int audioBandInt;
+        private int audioDataindex;
+
 
         private void Start()
         {
+            // Grabbing some stuff
+            popupMessageTransform = popupMessage.GetComponent<RectTransform>();
             // Initial Setup
-            SetEnabled(audioShrinkToggle.isOn, true);
+            SetEnabled(false, false);
             SetAudioBand(audioBand);
             SetDefaultScale(defaultScale, false);
             SetMaxAmplitudeScale(maxAmplitudeScale, false);
@@ -84,7 +114,40 @@ namespace DrBlackRat
                         break;
                 }
             }
+            // Popup Message Animation
+            if (!popupMessageMovementCompleted)
+            {
+                if (inSafeZone)
+                {
+                    MovePopupMessage(popupMessageOffPos, popupMessageOnPos, true);
+                }
+                else
+                {
+                    MovePopupMessage(popupMessageOnPos, popupMessageOffPos, false);
+                }
+            }
+
+            // Scale Player
+            if (isEnabled && !inSafeZone)
+            {
+                ScalePlayer();
+            }
+            else if (inSafeZone)
+            {
+#if !UNITY_EDITOR
+                Networking.LocalPlayer.SetAvatarEyeHeightByMultiplier(defaultScale);
+#endif
+            }
         }
+        // Networking
+        public override void OnDeserialization()
+        {
+            if (!syncSettings) return;
+            SetAudioBand(audioBand);
+            SetDefaultScale(defaultScale, false);
+            SetMaxAmplitudeScale(maxAmplitudeScale, false);
+        }
+
         // Enable / Disable button
         public void _AudioShrinkToggle()
         {
@@ -94,53 +157,142 @@ namespace DrBlackRat
         // AudioLink Band buttons
         public void _ALBandBass()
         {
+            if (audioBand == ALBand.bass) return;
             SetAudioBand(ALBand.bass);
+            // Networking
+            if (!syncSettings) return;
+            if (!Networking.IsOwner(gameObject)) Networking.SetOwner(Networking.LocalPlayer, gameObject);
+            RequestSerialization();
         }
         public void _ALBandLowMid()
         {
+            if (audioBand == ALBand.lowMid) return;
             SetAudioBand(ALBand.lowMid);
+            // Networking
+            if (!syncSettings) return;
+            if (!Networking.IsOwner(gameObject)) Networking.SetOwner(Networking.LocalPlayer, gameObject);
+            RequestSerialization();
         }
         public void _ALBandHighMid()
         {
+            if (audioBand == ALBand.highMid) return;
             SetAudioBand(ALBand.highMid);
+            // Networking
+            if (!syncSettings) return;
+            if (!Networking.IsOwner(gameObject)) Networking.SetOwner(Networking.LocalPlayer, gameObject);
+            RequestSerialization();
         }
         public void _ALBandTreble()
         {
+            if (audioBand == ALBand.treble) return;
             SetAudioBand(ALBand.treble);
+            // Networking
+            if (!syncSettings) return;
+            if (!Networking.IsOwner(gameObject)) Networking.SetOwner(Networking.LocalPlayer, gameObject);
+            RequestSerialization();
         }
 
         // Scale Sliders being moved
         public void _DefaultScaleMoved()
         {
-            SetDefaultScale(defaultScaleSlider.value, true);
+            float sliderValue = defaultScaleSlider.value;
+            if (defaultScale == sliderValue) return;
+            SetDefaultScale(sliderValue, true);
+            // Networking
+            if (!syncSettings) return;
+            if (!Networking.IsOwner(gameObject)) Networking.SetOwner(Networking.LocalPlayer, gameObject);
+            RequestSerialization();
         }
         public void _MaxAmplitudeScaleMoved()
         {
-            SetMaxAmplitudeScale(maxAmplitudeScaleSlider.value, true);
+            float sliderValue = maxAmplitudeScaleSlider.value;
+            if (maxAmplitudeScale == sliderValue) return;
+            SetMaxAmplitudeScale(sliderValue, true);
+            // Networking
+            if (!syncSettings) return;
+            if (!Networking.IsOwner(gameObject)) Networking.SetOwner(Networking.LocalPlayer, gameObject);
+            RequestSerialization();
+        }
+
+        // Safe Zone Trigger / Respawn etc
+        public override void OnPlayerTriggerEnter(VRCPlayerApi player)
+        {
+            if (!player.isLocal) return;
+            // Set Text
+            popupText.text = safeZoneMessage;
+            // Setting up Animation
+            inSafeZone = true;
+            popupMessageElapsedTime = 0f;
+            popupMessageMovementCompleted = false;
+        }
+        public override void OnPlayerTriggerExit(VRCPlayerApi player)
+        {
+            if (!player.isLocal) return;
+            // Setting up Animation
+            inSafeZone = false;
+            popupMessageElapsedTime = 0f;
+            popupMessageMovementCompleted = false;
+        }
+        public override void OnPlayerRespawn(VRCPlayerApi player)
+        {
+            if (!player.isLocal) return;
+            // Setting up Animation
+            inSafeZone = false;
+            popupMessageElapsedTime = 0f;
+            popupMessageMovementCompleted = false;
         }
 
         // Enabling / Disabling AudioShrink
         private void SetEnabled(bool enabled, bool skipToggleAdjustment)
         {
             isEnabled = enabled;
+            // AudioLink Setup
             audioLink.audioDataToggle = isEnabled;
+            if (isEnabled)
+            {
+                audioLink.EnableReadback();
+            }
+            else
+            {
+                audioLink.DisableReadback();
+            }
+            // Enabling / Disabling Manual Scalling
+#if !UNITY_EDITOR
+            Networking.LocalPlayer.SetManualAvatarScalingAllowed(!isEnabled);
+#endif
+            // Turning the toggle on / off
             if (!skipToggleAdjustment)
             {
                 audioShrinkToggle.enabled = isEnabled;
             }
-
         }
 
         // Setting the Audio Band
         private void SetAudioBand(ALBand setAudioBand)
         {
-
-            if (audioBand != setAudioBand)
-            {
-                aLBandMovementCompleted = false;
-                aLBandMovementOldPos = audioBandSelector.anchoredPosition3D;
-            }
             audioBand = setAudioBand;
+            // Selector Movement Settings
+            aLBandMovementElapsedTime = 0f;
+            aLBandMovementCompleted = false;
+            aLBandMovementOldPos = audioBandSelector.anchoredPosition3D;
+            // Setting band
+            switch (audioBand)
+            {
+                case ALBand.bass:
+                    audioBandInt = 0;
+                    break;
+                case ALBand.lowMid:
+                    audioBandInt = 1;
+                    break;
+                case ALBand.highMid:
+                    audioBandInt = 3;
+                    break;
+                case ALBand.treble:
+                    audioBandInt = 4;
+                    break;
+            }
+            // calculating new auidoDataindex
+            audioDataindex = (audioBandInt * 128) + delay;
         }
 
         // Setting Scale Values & Slider / Text
@@ -163,16 +315,45 @@ namespace DrBlackRat
                 maxAmplitudeScaleSlider.value = maxAmplitudeScale;
             }
         }
+        // Audio Band Selector Animation
         private void MoveALBandSelector(Vector3 startPos, Vector3 endPos)
         {
             aLBandMovementElapsedTime += Time.deltaTime;
             float percentageComplete = aLBandMovementElapsedTime / aLBandMovementDuration;
-            audioBandSelector.anchoredPosition3D = Vector3.Lerp(startPos, endPos, Mathf.SmoothStep(0, 1, percentageComplete));
+            audioBandSelector.anchoredPosition3D = Vector3.Lerp(startPos, endPos, aLBandMovementCurve.Evaluate(percentageComplete));
             if (percentageComplete >= 1f)
             {
                 aLBandMovementElapsedTime = 0f;
                 aLBandMovementCompleted = true;
             }
+        }
+        // Popup Message Animation
+        private void MovePopupMessage(Vector3 startPos, Vector3 endPos, bool showUIPanel)
+        {
+            if (showUIPanel) popupMessage.SetActive(true);
+            popupMessageElapsedTime += Time.deltaTime;
+            float percentageComplete = popupMessageElapsedTime / popupMessageDuration;
+            popupMessageTransform.anchoredPosition3D = Vector3.Lerp(startPos, endPos, popupMessageCurve.Evaluate(percentageComplete));
+            if (percentageComplete >= 1)
+            {
+                popupMessageElapsedTime = 0f;
+                popupMessageMovementCompleted = true;
+                if (!showUIPanel)
+                {
+                    popupText.text = "";
+                    popupMessage.SetActive(false);
+                }
+            }
+        }
+        // Scale based on AudioLink
+        private void ScalePlayer()
+        {
+            Color[] audioData = audioLink.audioData;
+            if (audioData.Length == 0) return;
+            float amplitude = audioData[audioDataindex].grayscale;
+#if !UNITY_EDITOR
+            Networking.LocalPlayer.SetAvatarEyeHeightByMultiplier(Mathf.Lerp(defaultScale, maxAmplitudeScale, amplitude));
+#endif
         }
     }
     public enum ALBand
