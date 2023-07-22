@@ -6,8 +6,10 @@ using VRC.Udon;
 
 namespace DrBlackRat
 {
+    [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
     public class AudioShrinkSafeZone : UdonSharpBehaviour
     {
+        [HideInInspector]
         public AudioShrink audioShrink;
         public override void OnPlayerTriggerEnter(VRCPlayerApi player)
         {

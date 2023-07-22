@@ -14,7 +14,7 @@ namespace DrBlackRat
     public class AudioShrink : UdonSharpBehaviour
     {
         [Header("Audio Shrink Settings")]
-        [Tooltip("AudioLink Prefab in your scene")]
+        [HideInInspector]
         public AudioLink audioLink;
         [Space(10)]
         [SerializeField][Tooltip("Sync Audio Band, Default Scale and Max Amplitude Scale over the network")]
@@ -70,9 +70,9 @@ namespace DrBlackRat
         private Vector3 popupMessageOffPos = new Vector3(0f, -4.5f, 0f);
         private Vector3 popupMessageOnPos = new Vector3(0f, 4f, 0f);
 #if UNITY_ANDROID
-        private string safeZoneMessage = "You are currently inside the Safe Zone! \nGet further away for AudioShrink to take effect.";
+        private string safeZoneMessage = "You are currently inside a Safe Zone! \nStep out of it for AudioShrink to take effect.";
 #else
-        private string safeZoneMessage = "You are currently inside the Safe Zone! \r\nGet further away for AudioShrink to take effect.";
+        private string safeZoneMessage = "You are currently inside a Safe Zone! \r\nStep out of it for AudioShrink to take effect.";
 #endif
 
         private bool isEnabled = false;
@@ -156,6 +156,18 @@ namespace DrBlackRat
             SetEnabled(audioShrinkToggle.isOn, true);
         }
 
+        // Reset Button
+        public void _ResetSettings()
+        {
+            if (audioBand != ALBand.bass) SetAudioBand(ALBand.bass);
+            if (defaultScale != 1) SetDefaultScale(1, false);
+            if (maxAmplitudeScale != 2) SetMaxAmplitudeScale(2, false);
+            // Networking
+            if (!syncSettings) return;
+            if (!Networking.IsOwner(gameObject)) Networking.SetOwner(Networking.LocalPlayer, gameObject);
+            RequestSerialization();
+        }
+
         // AudioLink Band buttons
         public void _ALBandBass()
         {
@@ -233,24 +245,22 @@ namespace DrBlackRat
         {
             if (safeZoneCount > 0)
             {
+                if (inSafeZone) return;
                 inSafeZone = true;
-            }
-            else
-            {
-                inSafeZone = false;
-            }
-            // Set text & trigger animation
-            if (inSafeZone)
-            {
+                // Set Text & Tirgger Animation
                 popupText.text = safeZoneMessage;
                 popupMessageElapsedTime = 0f;
                 popupMessageMovementCompleted = false;
             }
             else
             {
+                if (!inSafeZone) return;
+                inSafeZone = false;
+                // trigger Animation
                 popupMessageElapsedTime = 0f;
                 popupMessageMovementCompleted = false;
             }
+
         }
         #endregion
         #region Setting Variables & According Settings

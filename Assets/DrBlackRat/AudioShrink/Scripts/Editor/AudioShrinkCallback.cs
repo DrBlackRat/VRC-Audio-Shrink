@@ -12,10 +12,17 @@ namespace DrBlackRat
         public static void OnPostProcessScene()
         {
             AudioShrink audioShrink = Object.FindObjectOfType<AudioShrink>();
-            if (audioShrink != null && audioShrink.audioLink == null)
+            if (audioShrink != null)
             {
                 audioShrink.audioLink = Object.FindObjectOfType<AudioLink>();
+                AudioShrinkSafeZone[] audioShrinkSafeZones = Object.FindObjectsOfType<AudioShrinkSafeZone>();
+                foreach (AudioShrinkSafeZone audioShrinkSafeZone in audioShrinkSafeZones) 
+                {
+                    if (audioShrinkSafeZone.audioShrink != null) return;
+                    audioShrinkSafeZone.audioShrink = audioShrink;
+                }
             }
+
         }
     }
 }
