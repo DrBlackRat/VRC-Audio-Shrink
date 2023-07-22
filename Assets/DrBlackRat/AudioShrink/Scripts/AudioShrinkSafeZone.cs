@@ -7,6 +7,7 @@ using VRC.Udon;
 namespace DrBlackRat
 {
     [UdonBehaviourSyncMode(BehaviourSyncMode.None)]
+    [DefaultExecutionOrder(100)]
     public class AudioShrinkSafeZone : UdonSharpBehaviour
     {
         [HideInInspector]
