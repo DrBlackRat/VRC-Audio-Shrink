@@ -15,23 +15,23 @@ namespace DrBlackRat
     {
         [Header("Audio Shrink Settings")]
         [Space(10)]
-        [SerializeField][UdonSynced][Tooltip("Sync Audio Band, Default Scale and Max Amplitude Scale over the network")]
-        private bool syncSettings = true;
-        [SerializeField][UdonSynced][Tooltip("Disable & Lock AudioShrink for everyone, the master can change it later")]
-        private bool masterDisable;
-        [SerializeField][UdonSynced][Tooltip("Only allow the master to change the Settings, will enable Sync Settings")]
-        private bool masterControl;
+        [SerializeField][Tooltip("Sync Audio Band, Default Scale and Max Amplitude Scale over the network")]
+        private bool syncSettings = false;
+        [SerializeField][Tooltip("Disable & Lock AudioShrink for everyone, the master can change it later")]
+        private bool masterDisable = false;
+        [SerializeField][Tooltip("Only allow the master to change the Settings, will enable Sync Settings")]
+        private bool masterControl = false;
 
         [Header("AudioLink Settings")]
-        [SerializeField][UdonSynced][Tooltip("AudioLink Band used for AudioShrink")]
+        [SerializeField][Tooltip("AudioLink Band used for AudioShrink")]
         private ALBand audioBand = ALBand.bass;
         [SerializeField][Range(0, 127)][Tooltip("Adds an extra delay to AudioShrink")]
         private int delay = 0;
 
         [Header("Scale Settings")]
-        [SerializeField][UdonSynced][Tooltip("Scale multiplier that is applied when nothing is happening on the set audio band")]
+        [SerializeField][Tooltip("Scale multiplier that is applied when nothing is happening on the set audio band")]
         private float defaultScale = 1.0f;
-        [SerializeField][UdonSynced][Tooltip("Scale multiplier that is applied when the set audio band is maxed out ")]
+        [SerializeField][Tooltip("Scale multiplier that is applied when the set audio band is maxed out ")]
         private float maxAmplitudeScale = 2.0f;
 
         [Header("Internals")]
@@ -48,8 +48,9 @@ namespace DrBlackRat
         [SerializeField]
         private RectTransform audioBandSelector;
 
+        // Audio Band UI stuff
         private bool aLBandMovementCompleted = true;
-        private float aLBandMovementElapsedTime;
+        private float aLBandMovementElapsedTime = 0f;
         [SerializeField]
         private float aLBandMovementDuration = 0.3f;
         [SerializeField]
@@ -60,13 +61,14 @@ namespace DrBlackRat
         private Vector3 alBandSelectorHighMidPos = new Vector3(6f, 0f, 0f);
         private Vector3 alBandSelectorTreblePos = new Vector3(18f, 0f, 0f);
 
+        // Safe Zone stuff
         [SerializeField]
         private GameObject safeZoneMessageObj;
         [SerializeField]
         private TextMeshProUGUI safeZoneText;
         private RectTransform safeZoneMessageTransform;
         private bool safeZoneMessageMovementCompleted = true;
-        private float safeZoneMessageElapsedTime;
+        private float safeZoneMessageElapsedTime = 0f;
         [SerializeField]
         private float safeZoneMessageDuration = 0.3f;
         [SerializeField]
@@ -80,12 +82,12 @@ namespace DrBlackRat
 #endif
         private bool isEnabled = false;
         private bool inSafeZone = false;
-        private int safeZoneCount;
-        private bool showSafeZonePopup;
+        private int safeZoneCount = 0;
+        private bool showSafeZonePopup = false;
 
-        private bool isMaster;
-        [UdonSynced]
-        private string masterName;
+        // Internal Master Stuff
+        private bool isMaster = false;
+        private string masterName = "";
         [SerializeField]
         private GameObject toggleLockObj;
         [SerializeField]
@@ -105,14 +107,31 @@ namespace DrBlackRat
 
         [HideInInspector]
         public AudioLink audioLink;
-        private int audioDataindex;
-        private bool audioDataEnabledDefault;
+        private int audioDataindex = 0;
+        private bool audioDataEnabledDefault = false;
+
+        // Synced Variables
+        [UdonSynced] private bool netSyncSettings;
+        [UdonSynced] private bool netMasterDisable;
+        [UdonSynced] private bool netMasterControl;
+        [UdonSynced] private string netMasterName;
+        [UdonSynced] private ALBand netAudioBand;
+        [UdonSynced] private float netDefaultScale;
+        [UdonSynced] private float netMaxAmplitudeScale;
 
         private void Start()
         {
-            audioDataEnabledDefault = audioLink.audioDataToggle;
             // Grabbing some stuff
+            audioDataEnabledDefault = audioLink.audioDataToggle;
             safeZoneMessageTransform = safeZoneMessageObj.GetComponent<RectTransform>();
+            // Inistal Synced Variable set
+            netSyncSettings = syncSettings;
+            netMasterDisable = masterDisable;
+            netMasterControl = masterControl;
+            netMasterName = masterName;
+            netAudioBand = audioBand;
+            netDefaultScale = defaultScale;
+            netMaxAmplitudeScale = maxAmplitudeScale;
             // Initial Setup
             CheckMaster();
             SetSyncSettings(syncSettings, false);
@@ -172,14 +191,14 @@ namespace DrBlackRat
         }
         public override void OnDeserialization()
         {
-            SetMaster();
-            SetMasterDisable(masterDisable, false);
-            SetMasterControl(masterControl, false);
-            SetSyncSettings(syncSettings, false);
+            SetMaster(netMasterName);
+            SetMasterDisable(netMasterDisable, false);
+            SetMasterControl(netMasterControl, false);
+            SetSyncSettings(netSyncSettings, false);
             if (!syncSettings) return;
-            SetAudioBand(audioBand);
-            SetDefaultScale(defaultScale, false);
-            SetMaxAmplitudeScale(maxAmplitudeScale, false);
+            SetAudioBand(netAudioBand);
+            SetDefaultScale(netDefaultScale, false);
+            SetMaxAmplitudeScale(netMaxAmplitudeScale, false);
         }
         #endregion
         #region UI Events
@@ -243,6 +262,7 @@ namespace DrBlackRat
             SetMaxAmplitudeScale(sliderValue, true);
             SendNetworkData();
         }
+        // Master Toggles
         public void _MasterDisableToggle()
         {
             bool disable = masterDisableToggle.isOn;
@@ -262,6 +282,10 @@ namespace DrBlackRat
             bool sync = syncSettingsToggle.isOn;
             if (syncSettings == sync || !isMaster) return;
             SetSyncSettings(sync, true);
+            // Set Synced Variables
+            netAudioBand = audioBand;
+            netDefaultScale = defaultScale;
+            netMaxAmplitudeScale = maxAmplitudeScale;
             SendNetworkData();
         }
         #endregion
@@ -283,10 +307,8 @@ namespace DrBlackRat
                     audioLink.DisableReadback();
                 }
             }
-            // Enabling / Disabling Manual Scalling
-#if !UNITY_EDITOR
-            Networking.LocalPlayer.SetManualAvatarScalingAllowed(!isEnabled);
-#endif
+            // Enable / Disable Manual Scaling
+            SetManualScaling();
             // Turning the toggle on / off
             if (!skipToggleAdjustment) audioShrinkToggle.SetIsOnWithoutNotify(isEnabled);
             // Hide / Show SafeZone Text
@@ -297,6 +319,8 @@ namespace DrBlackRat
         private void SetAudioBand(ALBand setAudioBand)
         {
             audioBand = setAudioBand;
+            // Setting Synced Variable
+            if (syncSettings) netAudioBand = audioBand;
             // Selector Movement Settings
             aLBandMovementElapsedTime = 0f;
             aLBandMovementCompleted = false;
@@ -309,15 +333,35 @@ namespace DrBlackRat
         private void SetDefaultScale(float newValue, bool skipSliderAdjustment)
         {
             defaultScale = newValue;
+            // Setting Synced Variable
+            if (syncSettings) netDefaultScale = defaultScale;
+
             defaultScaleText.text = defaultScale.ToString("F2", CultureInfo.InvariantCulture);
             if (!skipSliderAdjustment) defaultScaleSlider.value = defaultScale;
-
         }
         private void SetMaxAmplitudeScale(float newValue, bool skipSliderAdjustment)
         {
             maxAmplitudeScale = newValue;
+            // Setting Synced Variable
+            if (syncSettings) netMaxAmplitudeScale = maxAmplitudeScale;
+
             maxAmplitudeScaleText.text = maxAmplitudeScale.ToString("F2", CultureInfo.InvariantCulture);
             if (!skipSliderAdjustment) maxAmplitudeScaleSlider.value = maxAmplitudeScale;
+        }
+
+        private void SetManualScaling()
+        {
+#if !UNITY_EDITOR
+            if (isEnabled && !inSafeZone)
+            {
+                Networking.LocalPlayer.SetManualAvatarScalingAllowed(false);
+            }
+            else 
+            {
+               Networking.LocalPlayer.SetAvatarEyeHeightByMultiplier(1);
+               Networking.LocalPlayer.SetManualAvatarScalingAllowed(true);
+            }
+#endif
         }
         #endregion
         #region Master Settings
@@ -330,24 +374,27 @@ namespace DrBlackRat
         {
             if (!Networking.IsMaster) return;
             isMaster = true;
-            masterName = Networking.LocalPlayer.displayName;
-            SetMaster();
+            string name = Networking.LocalPlayer.displayName;
+            SetMaster(name);
             SendNetworkData();
         }
         // Set Master
-        private void SetMaster()
+        private void SetMaster(string name)
         {
             // Set Master Name
+            masterName = name;
+            netMasterName = masterName;
             currnetMasterText.text = $"Master: {masterName}";
             // Cover Master Settings
             masterSettingsCoverObj.SetActive(!isMaster);
-            // Check Master Control
-            SetMasterControl(masterControl, true);
+            // Uncover Normal Settings
+            if (masterControl && isMaster) settingsLockObj.SetActive(false);
         }
         // Change Master Settings
         private void SetMasterDisable(bool disable, bool skipToggleAdjustment)
         {
             masterDisable = disable;
+            netMasterDisable = masterDisable;
             toggleLockObj.SetActive(masterDisable);
             // Disable AudioShrink
             if (masterDisable) SetEnabled(false, false);
@@ -357,6 +404,7 @@ namespace DrBlackRat
         private void SetMasterControl(bool control, bool skipToggleAdjustment)
         {
             masterControl = control;
+            netMasterControl = masterControl;
             if (isMaster)
             {
                 settingsLockObj.SetActive(false);
@@ -381,6 +429,7 @@ namespace DrBlackRat
         private void SetSyncSettings(bool sync, bool skipToggleAdjustment)
         {
             syncSettings = sync;
+            netSyncSettings = syncSettings;
             if (syncSettings)
             {
                 localSyncSettingsText.text = "Synced";
@@ -413,21 +462,22 @@ namespace DrBlackRat
                 if (inSafeZone) return;
                 inSafeZone = true;
                 SafeZonePopup();
+                // Enable / Disable Manual Scaling
+                SetManualScaling();
             }
             else
             {
                 if (!inSafeZone) return;
                 inSafeZone = false;
                 SafeZonePopup();
+                // Enable / Disable Manual Scaling
+                SetManualScaling();
             }
         }
         private void SafeZonePopup()
         {
             if (inSafeZone && isEnabled)
             {
-#if !UNITY_EDITOR
-            Networking.LocalPlayer.SetManualAvatarScalingAllowed(true);
-#endif
                 // Set Text & Tirgger Animation
                 showSafeZonePopup = true;
                 safeZoneText.text = safeZoneMessage;
