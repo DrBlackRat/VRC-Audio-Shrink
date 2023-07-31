@@ -21,7 +21,8 @@ Since this can be quite nausea inducing I made extra sure that it's safe to use!
 - Only you can enable it for yourself
 - There are Safe Zones you can set up in which this system will be disabled
 
-### Here is a video showcasing it:
+### Here are videos showcasing it:
+https://youtu.be/g4o4aNW3-7E
 https://youtu.be/I6JBN7ME7bA
 
 ### How to set it up:
