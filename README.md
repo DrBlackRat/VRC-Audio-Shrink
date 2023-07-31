@@ -1,7 +1,8 @@
 # VRC AudioShrink
 Ever wanted to scale your Avatar to music with AudioLink? No? Well ow you can do it anyway!
 
-![image](https://github.com/DrBlackRat/VRC-Audio-Shrink/assets/46327609/b1815fe1-a023-4808-bdcd-62a706b87e09)
+![image](https://github.com/DrBlackRat/VRC-Audio-Shrink/assets/46327609/d472c577-9974-4c3b-811a-e395f65153b1)
+
 
 ### What does this do?
 - Scales your Avatar based on AudioLink
