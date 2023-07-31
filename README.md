@@ -23,6 +23,7 @@ Since this can be quite nausea inducing I made extra sure that it's safe to use!
 
 ### Here are videos showcasing it:
 https://youtu.be/g4o4aNW3-7E
+
 https://youtu.be/I6JBN7ME7bA
 
 ### How to set it up:
